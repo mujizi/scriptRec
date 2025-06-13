@@ -1,0 +1,14 @@
+{
+    "python.defaultInterpreterPath": "/opt/conda/bin/python",
+    "python.analysis.extraPaths": [
+        "/opt/rag_milvus_kb_project/src"
+    ],
+    "python.autoComplete.extraPaths": [
+        "/opt/rag_milvus_kb_project/src"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "python.analysis.typeCheckingMode": "basic"
+} 

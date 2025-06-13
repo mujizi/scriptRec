@@ -1,0 +1,13 @@
+# Environment file
+.env
+
+# Knowledge base data directory
+kb_data/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test output files
+src/test_output/傲慢与偏见_modifications.json
