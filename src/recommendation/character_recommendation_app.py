@@ -1,13 +1,31 @@
+import os
+import sys
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# 从环境变量获取并设置 PYTHONPATH
+pythonpath = os.getenv("PYTHONPATH")
+if pythonpath and pythonpath not in sys.path:
+    sys.path.insert(0, pythonpath)
+
+print(os.getenv("MILVUS_URI"))
+print(os.getenv("PYTHONPATH"))
+
 import gradio as gr
 from pymilvus import MilvusClient
-from llm import embedding_func
+from src.utils.llm import embedding_func
 import numpy as np
 import uuid
+import os
+
+
+
 
 # 连接到Milvus数据库（假设人物集合名为character_analysis）
 db_name = "kb"
 client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
-collection_name = "character2"  # 人物集合名
+collection_name = "character"  # 人物集合名
 SIMILARITY_THRESHOLD = 0.4  # 相似度阈值
 
 def vector_query(client, collection_name, text, top_k=5):
@@ -71,47 +89,21 @@ def build_search_ui():
         
         if not results:
             return "未找到相关人物"
+        
+        # 格式化结果为字符串
+        formatted_results = []
+        for result in results:
+            # 排除id和similarity_score，其他字段用key加换行拼接
+            character_info = []
+            for key, value in result.items():
+                if key not in ["id", "similarity_score"]:
+                    character_info.append(f"{key}:\n{value}")
             
-        output = "<div class='results-container'>"
-        for i, result in enumerate(results, 1):
-            similarity_percent = int(result['similarity_score'] * 100)
-            color = f"rgb({255 - similarity_percent * 2.55}, {similarity_percent * 2.55}, 0)"
-            
-            output += f"""
-            <div class="result-card" style="animation-delay: {i*0.1}s">
-                <div class="card-header">
-                    <h3 class="character-name">{result['character_name']}</h3>
-                    <div class="similarity-badge" style="background-color: {color}">
-                        相似度: {similarity_percent}%
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="character-info">
-                        <div class="info-row">
-                            <span class="info-label">基本信息:</span>
-                            <span class="info-value">{result['basic_information']}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">人物特征:</span>
-                            <span class="info-value">{result['characteristics']}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">所属剧本:</span>
-                            <span class="info-value">{result['script_name']}</span>
-                        </div>
-                    </div>
-                    <div class="character-details">
-                        <h4>人物传记</h4>
-                        <p>{result['biography']}</p>
-                        
-                        <h4>人物总结</h4>
-                        <p>{result['character_summary']}</p>
-                    </div>
-                </div>
-            </div>
-            """
-        output += "</div>"
-        return output
+            # 将单个角色的信息拼接
+            formatted_results.append("\n".join(character_info))
+        
+        # 用"——————"分割不同元素
+        return "\n——————\n".join(formatted_results)
 
     with gr.Blocks(title="人物推荐系统", theme=gr.themes.Soft()) as demo:
         gr.HTML("""
@@ -194,4 +186,5 @@ def build_search_ui():
 
 if __name__ == "__main__":
     demo = build_search_ui()
-    demo.launch(server_name="0.0.0.0", server_port=7864)
+    # demo.launch(server_name="0.0.0.0", server_port=7864)
+    demo.launch(server_name="0.0.0.0", server_port=7868)

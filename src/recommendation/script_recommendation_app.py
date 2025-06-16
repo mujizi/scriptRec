@@ -1,13 +1,29 @@
+import os
+import sys
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# 从环境变量获取并设置 PYTHONPATH
+pythonpath = os.getenv("PYTHONPATH")
+if pythonpath and pythonpath not in sys.path:
+    sys.path.insert(0, pythonpath)
+
+print(os.getenv("MILVUS_URI"))
+print(os.getenv("PYTHONPATH"))
+
+
+
+
 import gradio as gr
 from pymilvus import MilvusClient
 from src.utils.llm import embedding_func # Assuming this is your embedding function
 import numpy as np
 from openai import AzureOpenAI
-import os
-from dotenv import load_dotenv
+
 
 # 加载环境变量
-load_dotenv('/opt/rag_milvus_kb_project/.env')
+
 
 # 从环境变量获取配置
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
