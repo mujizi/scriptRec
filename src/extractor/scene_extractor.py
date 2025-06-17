@@ -15,7 +15,7 @@ load_dotenv('/opt/rag_milvus_kb_project/.env')
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 API_VERSION = os.getenv('API_VERSION', '2024-02-15-preview')
-
+AZURE_MODEL_NAME = os.getenv('AZURE_MODEL_NAME')
 if not all([AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT]):
     raise ValueError("Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT")
 
@@ -25,7 +25,7 @@ MAX_CONCURRENT_REQUESTS = 10
 # 创建必要的目录
 os.makedirs("/opt/Filmdataset/demo/output", exist_ok=True)
 
-async def async_model_gpt4o_infer(instruct_text: str, raw_text: str) -> str:
+async def async_model_gpt41_infer(instruct_text: str, raw_text: str) -> str:
     text = f"{instruct_text} {raw_text}"
     print(f"Processing text block of length: {len(raw_text)}")
     client = AsyncAzureOpenAI(
@@ -34,7 +34,7 @@ async def async_model_gpt4o_infer(instruct_text: str, raw_text: str) -> str:
         api_version=API_VERSION
     )
     response = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=AZURE_MODEL_NAME,
         messages=[
             {"role": "user", "content": text},
         ],
@@ -72,7 +72,7 @@ async def batch_process_blocks(blocks: Dict[int, str], prompt: str, progress: gr
 
     async def process_block(block: str) -> Dict[str, str]:
         async with semaphore:
-            result = await async_model_gpt4o_infer(prompt, block)
+            result = await async_model_gpt41_infer(prompt, block)
             return {
                 "input": block[:500] + "..." if len(block) > 500 else block,
                 "output": result
@@ -146,7 +146,7 @@ async def extract_scene_names(text_blocks: Dict[int, str], progress: gr.Progress
     sorted_scenes = dict(sorted(all_scenes.items(), key=lambda x: int(x[0])))
 
     # 保存时确保原始符号保留（JSON自动处理转义）
-    scene_name_file = f"/opt/Filmdataset/demo/output/{script_name}_scene_names.json"
+    scene_name_file = f"/opt/rag_milvus_kb_project/src/test_output/{script_name}_scene_names.json"
     with open(scene_name_file, "w", encoding="utf-8") as f:
         json.dump(sorted_scenes, f, ensure_ascii=False, indent=2, separators=(',', ': '))
 
@@ -187,7 +187,7 @@ def split_script_into_scenes(script_text: str, scene_names: Dict[str, str], scri
         scenes_content[last_scene_name] = script_text[start:].strip()
 
     # 保存场景内容到JSON文件
-    scene_content_file = f"/opt/Filmdataset/demo/output/{script_name}_scenes.json"
+    scene_content_file = f"/opt/rag_milvus_kb_project/src/test_output/{script_name}_scenes.json"
     with open(scene_content_file, "w", encoding="utf-8") as f:
         json.dump(scenes_content, f, ensure_ascii=False, indent=2)
     return scenes_content
@@ -247,7 +247,7 @@ def save_to_excel(tags_summaries: Dict[str, Dict[str, Any]], scenes: Dict[str, s
         data["剧本名"].append(script_name)
 
     df = pd.DataFrame(data)
-    output_path = f"/opt/Filmdataset/demo/output/{script_name}_scene_summaries.xlsx"
+    output_path = f"/opt/rag_milvus_kb_project/src/test_output/{script_name}_scene_summaries.xlsx"
     df.to_excel(output_path, index=False)
     print(f"结果已保存到: {output_path}")
     return output_path
@@ -336,7 +336,7 @@ async def process_script(file_path: str, progress: gr.Progress) -> Dict[str, Any
         }
 
 def main():
-    current_dir = "/opt/Filmdataset/demo/clean"
+    current_dir = "/opt/rag_milvus_kb_project/kb_data/test"
     txt_files = [f for f in os.listdir(current_dir) if f.endswith('.txt')]
 
     if not txt_files:

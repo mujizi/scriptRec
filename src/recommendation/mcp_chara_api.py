@@ -39,10 +39,10 @@ mcp = FastMCP(host="0.0.0.0", port=7012)
 @mcp.tool()
 def script_character_recommendation(text):
     """
-    根据人物描述，推荐类似剧本中的人物
+    这是一个可以被大模型调用的推荐剧本人物工具，它的功能是：当用户输入关于一些剧本人物的描述，推荐最相关的的剧本人物。
 
-    Args:
-        text: 人物描述
+    Args:   
+        text: 用户输入的剧本人物描述
     """
     
     results = vector_query(client, collection_name, text, top_k=5)

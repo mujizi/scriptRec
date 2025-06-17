@@ -54,7 +54,7 @@ COLLECTION_NAME = "script4"
 # Similarity Threshold for Semantic Search
 # This is a distance threshold for COSINE metric. A value of 0.6 means we only keep results
 # with a cosine distance < 0.6, which corresponds to a cosine similarity > 0.4.
-SIMILARITY_DISTANCE_THRESHOLD = 0.6
+SIMILARITY_DISTANCE_THRESHOLD = 0.4
 
 # ==============================================================================
 # 2. Search Logic

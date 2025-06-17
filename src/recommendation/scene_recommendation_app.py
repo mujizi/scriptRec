@@ -1,6 +1,6 @@
 import gradio as gr
 from pymilvus import MilvusClient
-from llm import embedding_func
+from src.utils.llm import embedding_func
 import numpy as np
 import uuid
 

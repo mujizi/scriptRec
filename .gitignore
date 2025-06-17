@@ -11,3 +11,11 @@ __pycache__/
 
 # Test output files
 src/test_output/傲慢与偏见_modifications.json
+
+# Ignore cleanup, fail_process, logs, test, test_output directories and nohup.out file in recommendation
+src/cleanup/
+src/fail_process/
+src/logs/
+src/test/
+src/test_output/
+src/recommendation/nohup.out
