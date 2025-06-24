@@ -19,3 +19,48 @@ src/logs/
 src/test/
 src/test_output/
 src/recommendation/nohup.out
+
+# Additional files to ignore
+*.log
+*.tmp
+*.cache
+*.db
+*.sqlite
+*.sqlite3
+nohup.out
+.DS_Store
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Model files and large data files
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.model
+*.bin
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover

@@ -1,11 +1,47 @@
 import os
 import json
-import gradio as gr
 import pandas as pd
 from typing import List, Dict, Any, Optional
 import asyncio
 from openai import AsyncAzureOpenAI
 from dotenv import load_dotenv
+import sys
+import logging
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.llm import async_model_infer
+
+def parse_arguments():
+    """
+    解析命令行参数
+    """
+    parser = argparse.ArgumentParser(description='批量提取剧本人物信息')
+    parser.add_argument('--batch', type=str, default='batch_006', 
+                       help='要处理的batch目录名称 (例如: batch_006, batch_007)')
+    return parser.parse_args()
+
+# 解析命令行参数
+args = parse_arguments()
+batch_name = args.batch
+
+# 创建必要的目录
+base_dir = Path('/opt/rag_milvus_kb_project')
+log_dir = base_dir / 'kb_data' / 'character_result' / batch_name / 'output_log'
+log_dir.mkdir(parents=True, exist_ok=True)
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_dir / 'character_processing.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # 加载环境变量
 load_dotenv('/opt/rag_milvus_kb_project/.env')
@@ -18,9 +54,61 @@ API_VERSION = os.getenv('API_VERSION', '2024-02-15-preview')
 if not all([AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT]):
     raise ValueError("Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT")
 
-SCRIPT_DIR = "/opt/Filmdataset/demo/clean"
-OUTPUT_DIR = "/opt/Filmdataset/demo/character"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+def create_output_directories(batch_name: str) -> Dict[str, str]:
+    """
+    为每个batch创建必要的输出目录
+    
+    Args:
+        batch_name (str): batch目录名称
+    
+    Returns:
+        Dict[str, str]: 包含各个输出目录路径的字典
+    """
+    # 动态输出到指定batch下的目录
+    base_output_dir = Path(f'/opt/rag_milvus_kb_project/kb_data/character_result/{batch_name}')
+    
+    # 定义需要创建的目录
+    directories = {
+        'character_xlsx': base_output_dir / 'character_xlsx',
+        'output_log': base_output_dir / 'output_log'
+    }
+    
+    # 创建目录
+    for dir_path in directories.values():
+        dir_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created directory: {dir_path}")
+    
+    return {k: str(v) for k, v in directories.items()}
+
+def save_failed_files(batch_name: str, failed_files: List[str], error_messages: Dict[str, str]):
+    """
+    将处理失败的文件记录到专门的日志文件中
+    
+    Args:
+        batch_name (str): batch目录名称
+        failed_files (List[str]): 失败文件列表
+        error_messages (Dict[str, str]): 错误信息字典，key为文件名，value为错误信息
+    """
+    failed_log_dir = Path(f'/opt/rag_milvus_kb_project/src/fail_process/character_{batch_name}')
+    failed_log_dir.mkdir(parents=True, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    failed_log_file = failed_log_dir / f"failed_files_{batch_name}_{timestamp}.log"
+    
+    with open(failed_log_file, 'w', encoding='utf-8') as f:
+        f.write(f"Batch: {batch_name}\n")
+        f.write(f"Processing Time: {timestamp}\n")
+        f.write(f"Total Failed Files: {len(failed_files)}\n")
+        f.write("\nFailed Files Details:\n")
+        f.write("-" * 50 + "\n")
+        
+        for file_name in failed_files:
+            error_msg = error_messages.get(file_name, "Unknown error")
+            f.write(f"File: {file_name}\n")
+            f.write(f"Error: {error_msg}\n")
+            f.write("-" * 50 + "\n")
+    
+    logger.info(f"Failed files log saved to: {failed_log_file}")
 
 # 提示词定义（保持原格式）
 PROMPT = """
@@ -63,17 +151,17 @@ PROMPT = """
 """
 
 # 模型调用函数
-async def async_model_gpt4o_infer(instruct_text: str, raw_text: str) -> str:
+async def async_model_gpt41_infer(instruct_text: str, raw_text: str) -> str:
     """调用Azure OpenAI的gpt-4o-mini模型进行推理，确保返回JSON格式"""
     text = f"{instruct_text} {raw_text}"
-    print(f"Processing text block of length: {len(raw_text)}")
+    logger.info(f"Processing text block of length: {len(raw_text)}")
     client = AsyncAzureOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
         api_key=AZURE_OPENAI_API_KEY,
         api_version=API_VERSION
     )
     response = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": text}],
         temperature=1,
         top_p=0.7,
@@ -89,14 +177,14 @@ async def extract_character_information(prompt: str, script_path: str) -> Dict[s
             script_content = file.read()
         
         script_name = os.path.basename(script_path)
-        result_text = await async_model_gpt4o_infer(prompt, script_content)
+        result_text = await async_model_gpt41_infer(prompt, script_content)
         
         # 解析JSON结果
         try:
             result_data = json.loads(result_text)
             characters = result_data if isinstance(result_data, list) else list(result_data.values())
         except json.JSONDecodeError as e:
-            print(f"解析JSON失败: {e}，文件路径: {script_path}")
+            logger.error(f"解析JSON失败: {e}，文件路径: {script_path}")
             return {
                 "解析错误": {
                     "script_name": script_name,
@@ -125,7 +213,7 @@ async def extract_character_information(prompt: str, script_path: str) -> Dict[s
         return character_dict
 
     except Exception as e:
-        print(f"处理文件失败: {e}，文件路径: {script_path}")
+        logger.error(f"处理文件失败: {e}，文件路径: {script_path}")
         script_name = os.path.basename(script_path)
         return {
             "处理错误": {
@@ -140,10 +228,10 @@ async def extract_character_information(prompt: str, script_path: str) -> Dict[s
 
 # 保存到Excel函数
 def save_to_excel(characters: Dict[str, Dict[str, Any]], 
-                  output_path: str = os.path.join(OUTPUT_DIR, "character.xlsx")) -> None:
+                  output_path: str) -> None:
     """批量保存人物信息到Excel"""
     if not characters:
-        print("没有需要保存的人物信息")
+        logger.warning("没有需要保存的人物信息")
         return
     
     characters_list = list(characters.values())
@@ -169,88 +257,124 @@ def save_to_excel(characters: Dict[str, Dict[str, Any]],
             existing_df = pd.read_excel(output_path, engine='openpyxl')
             combined_df = pd.concat([existing_df, df], ignore_index=True)
             combined_df.to_excel(output_path, index=False, engine='openpyxl')
-            print(f"成功追加数据，当前总记录数: {len(combined_df)}")
+            logger.info(f"成功追加数据，当前总记录数: {len(combined_df)}")
         else:
             df.to_excel(output_path, index=False, engine='openpyxl')
-            print(f"成功创建文件，初始记录数: {len(df)}")
+            logger.info(f"成功创建文件，初始记录数: {len(df)}")
     except Exception as e:
-        print(f"保存Excel失败: {e}，尝试保存到临时文件")
+        logger.error(f"保存Excel失败: {e}，尝试保存到临时文件")
         temp_path = f"{output_path}.temp.xlsx"
         df.to_excel(temp_path, index=False, engine='openpyxl')
-        print(f"临时文件保存成功: {temp_path}")
+        logger.info(f"临时文件保存成功: {temp_path}")
 
-# 批量处理入口函数
-def process_batch_scripts():
-    """处理目录下所有剧本文件"""
-    script_files = [f for f in os.listdir(SCRIPT_DIR) 
-                   if os.path.isfile(os.path.join(SCRIPT_DIR, f)) 
-                   and f.lower().endswith('.txt')]  # 支持大小写敏感
+async def process_single_file(
+    file_path: str,
+    output_dirs: Dict[str, str],
+    batch_name: str
+) -> bool:
+    """
+    处理单个文件
     
-    if not script_files:
-        return "目录中没有找到txt剧本文件", []
+    Args:
+        file_path (str): 文件路径
+        output_dirs (Dict[str, str]): 输出目录字典
+        batch_name (str): batch目录名称
     
-    all_characters = {}
-    error_count = 0
-    
-    for file in script_files:
-        file_path = os.path.join(SCRIPT_DIR, file)
-        try:
-            chars = asyncio.run(extract_character_information(PROMPT, file_path))
-            all_characters.update(chars)
-        except Exception as e:
-            error_count += 1
-            print(f"文件 {file} 处理失败: {str(e)}")
-    
-    # 保存结果
-    save_to_excel(all_characters)
-    
-    # 生成状态信息
-    status = f"✅ 处理完成\n文件总数: {len(script_files)}\n成功提取角色数: {len(all_characters) - error_count}\n错误文件数: {error_count}"
-    if error_count > 0:
-        status += "\n⚠️ 错误详情请查看控制台日志"
-    
-    # 生成预览结果（限制2000字）
-    preview = "\n".join([
-        f"剧本: {char['script_name']}\n角色: {char['character_name']}\n摘要: {char['character_summary'][:200]}\n---"
-        for char in list(all_characters.values())[:20]  # 最多显示前20个角色
-    ])[:2000]  # 限制总长度
-    
-    return status, preview
-
-# 创建Gradio界面
-def create_interface():
-    with gr.Blocks(title="批量剧本人物分析系统", css="style.css") as interface:
-        gr.Markdown("# 📚 剧本人物信息批量提取系统")
-        gr.Markdown("自动分析 `/opt/Filmdataset/demo/clean` 目录下的所有TXT剧本文件")
+    Returns:
+        bool: 处理是否成功
+    """
+    try:
+        script_name = os.path.splitext(os.path.basename(file_path))[0]
+        logger.info(f"Processing file: {script_name}")
         
-        with gr.Column(scale=1, min_width=600):
-            status_box = gr.Textbox(
-                label="处理状态", 
-                lines=3, 
-                interactive=False, 
-                placeholder="等待处理..."
-            )
-            result_box = gr.Textbox(
-                label="提取结果预览", 
-                lines=10, 
-                interactive=False, 
-                placeholder="结果将显示在此处"
-            )
-            process_btn = gr.Button(
-                "开始批量处理", 
-                variant="primary", 
-                size="lg", 
-                icon="fa-solid fa-play"
-            )
+        # 提取人物信息
+        characters = await extract_character_information(PROMPT, file_path)
         
-        # 绑定处理函数
-        process_btn.click(
-            fn=process_batch_scripts,
-            outputs=[status_box, result_box]
+        if not characters:
+            logger.error(f"No characters extracted from {script_name}")
+            return False
+        
+        # 保存到Excel
+        excel_file = os.path.join(
+            output_dirs['character_xlsx'],
+            f"{script_name}_characters.xlsx"
         )
+        save_to_excel(characters, excel_file)
+        logger.info(f"Saved Excel to: {excel_file}")
+        
+        logger.info(f"Successfully processed {script_name}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error processing {script_name}: {str(e)}")
+        return False
+
+async def process_batch_directory(batch_dir: str):
+    """
+    处理整个batch目录
     
-    return interface
+    Args:
+        batch_dir (str): batch目录路径
+    """
+    batch_name = os.path.basename(batch_dir)
+    logger.info(f"Processing batch directory: {batch_name}")
+    
+    # 创建输出目录
+    output_dirs = create_output_directories(batch_name)
+    
+    # 获取所有txt文件
+    txt_files = [f for f in os.listdir(batch_dir) if f.endswith('.txt')]
+    total_files = len(txt_files)
+    processed_files = 0
+    failed_files = []
+    error_messages = {}
+    
+    # 处理每个文件
+    for txt_file in txt_files:
+        file_path = os.path.join(batch_dir, txt_file)
+        try:
+            success = await process_single_file(file_path, output_dirs, batch_name)
+            
+            if success:
+                processed_files += 1
+            else:
+                failed_files.append(txt_file)
+                error_messages[txt_file] = "Processing failed"
+        except Exception as e:
+            failed_files.append(txt_file)
+            error_messages[txt_file] = str(e)
+        
+        logger.info(f"Progress: {processed_files}/{total_files} files processed")
+    
+    # 记录处理结果
+    logger.info(f"Batch {batch_name} processing completed:")
+    logger.info(f"Total files: {total_files}")
+    logger.info(f"Successfully processed: {processed_files}")
+    logger.info(f"Failed files: {len(failed_files)}")
+    
+    # 保存失败文件记录
+    if failed_files:
+        save_failed_files(batch_name, failed_files, error_messages)
+        logger.info("Failed files list:")
+        for file in failed_files:
+            logger.info(f"- {file}")
+
+async def main():
+    """
+    主函数
+    """
+    try:
+        # 动态指定处理目录
+        batch_dir = f"/opt/rag_milvus_kb_project/kb_data/script/juben_cn/{batch_name}"
+        if not os.path.exists(batch_dir):
+            raise FileNotFoundError(f"找不到目录: {batch_dir}")
+            
+        logger.info(f"Starting to process batch: {batch_dir}")
+        await process_batch_directory(batch_dir)
+            
+    except Exception as e:
+        logger.error(f"Batch processing failed: {str(e)}")
+        raise
 
 if __name__ == "__main__":
-    interface = create_interface()
-    interface.launch(server_port=7860, share=False)
+    asyncio.run(main())

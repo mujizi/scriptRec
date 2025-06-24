@@ -137,9 +137,9 @@ def semantic_search(client, collection_name, text, top_k=5):
                 distance = hit['distance']
                 
                 # Filter out results that are not similar enough
-                if distance > SIMILARITY_DISTANCE_THRESHOLD:
-                    print(f"Filtering out low similarity result (distance: {distance:.4f})")
-                    continue
+                # if distance > SIMILARITY_DISTANCE_THRESHOLD:
+                #     print(f"Filtering out low similarity result (distance: {distance:.4f})")
+                #     continue
                 
                 similarity_score = 1.0 - distance
                 
@@ -453,4 +453,4 @@ def build_search_ui():
 # ==============================================================================
 if __name__ == "__main__":
     app_ui = build_search_ui()
-    app_ui.launch(server_name="0.0.0.0", server_port=7867, inbrowser=True)
+    app_ui.launch(server_name="0.0.0.0", inbrowser=True)

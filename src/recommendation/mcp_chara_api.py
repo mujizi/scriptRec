@@ -12,7 +12,7 @@ if pythonpath and pythonpath not in sys.path:
 # print(os.getenv("MILVUS_URI"))
 # print(os.getenv("PYTHONPATH"))
 
-import gradio as gr
+
 from pymilvus import MilvusClient
 from src.utils.llm import embedding_func
 import numpy as np

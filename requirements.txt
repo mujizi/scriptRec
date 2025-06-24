@@ -1,28 +1,34 @@
-# Core dependencies
-pymilvus>=2.3.3
-numpy>=1.24.0
-pandas>=2.0.0
-openai>=1.0.0
+# 高级人物推荐系统依赖包
+
+# 核心依赖
+pymilvus>=2.3.0
+gradio>=4.0.0
 python-dotenv>=1.0.0
 
-# Web framework and API
-fastapi>=0.100.0
-uvicorn>=0.23.0
-pydantic>=2.0.0
-
-# UI and visualization
-gradio>=4.0.0
-
-# NLP and text processing
-spacy>=3.7.0
+# 文本处理
 jieba>=0.42.1
+numpy>=1.24.0
+
+# 机器学习
 scikit-learn>=1.3.0
 
-# Async support
-asyncio>=3.4.3
+# 异步处理
+asyncio-mqtt>=0.13.0
 
-# File handling
-pathlib>=1.0.1
+# 数据处理
+pandas>=2.0.0
 
-# MCP (Model Context Protocol)
-mcp>=1.0.0 
+# 网络请求
+requests>=2.31.0
+
+# 类型提示
+typing-extensions>=4.7.0
+
+# 开发工具
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+
+# 可选依赖（用于高级功能）
+# openai>=1.0.0  # 如果使用OpenAI
+# azure-ai-openai>=1.0.0  # 如果使用Azure OpenAI 

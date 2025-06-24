@@ -10,6 +10,7 @@ from datetime import datetime
 import aiohttp
 import sys
 import logging
+import argparse
 from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.llm import async_model_infer
@@ -21,9 +22,22 @@ from extractor.single_script_processor import (
     save_to_excel
 )
 
+def parse_arguments():
+    """
+    解析命令行参数
+    """
+    parser = argparse.ArgumentParser(description='批量处理剧本文件')
+    parser.add_argument('--batch', type=str, default='batch_006', 
+                       help='要处理的batch目录名称 (例如: batch_006, batch_007)')
+    return parser.parse_args()
+
+# 解析命令行参数
+args = parse_arguments()
+batch_name = args.batch
+
 # 创建必要的目录
 base_dir = Path('/opt/rag_milvus_kb_project')
-log_dir = base_dir / 'kb_data' / 'scene_result' / 'batch_000' / 'output_log'
+log_dir = base_dir / 'kb_data' / 'scene_result' / batch_name / 'output_log'
 log_dir.mkdir(parents=True, exist_ok=True)
 
 # 配置日志
@@ -60,8 +74,8 @@ def create_output_directories(batch_name: str) -> Dict[str, str]:
     Returns:
         Dict[str, str]: 包含各个输出目录路径的字典
     """
-    # 强制输出到batch_000下的scene_name_json等目录
-    base_output_dir = Path('/opt/rag_milvus_kb_project/kb_data/scene_result/batch_000')
+    # 动态输出到指定batch下的scene_name_json等目录
+    base_output_dir = Path(f'/opt/rag_milvus_kb_project/kb_data/scene_result/{batch_name}')
     
     # 定义需要创建的目录
     directories = {
@@ -87,7 +101,7 @@ def save_failed_files(batch_name: str, failed_files: List[str], error_messages: 
         failed_files (List[str]): 失败文件列表
         error_messages (Dict[str, str]): 错误信息字典，key为文件名，value为错误信息
     """
-    failed_log_dir = Path('/opt/rag_milvus_kb_project/src/fail_process/batch_000')
+    failed_log_dir = Path(f'/opt/rag_milvus_kb_project/src/fail_process/{batch_name}')
     failed_log_dir.mkdir(parents=True, exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -237,8 +251,8 @@ async def main():
     主函数
     """
     try:
-        # 指定处理fail_txt目录
-        batch_dir = "/opt/rag_milvus_kb_project/kb_data/scene_result/batch_000/fail_txt"
+        # 动态指定处理目录
+        batch_dir = f"/opt/rag_milvus_kb_project/kb_data/script/juben_cn/{batch_name}"
         if not os.path.exists(batch_dir):
             raise FileNotFoundError(f"找不到目录: {batch_dir}")
             
