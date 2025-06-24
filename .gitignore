@@ -1,6 +1,6 @@
 # Environment file
 .env
-
+logs/
 # Knowledge base data directory
 kb_data/
 

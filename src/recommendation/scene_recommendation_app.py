@@ -7,7 +7,7 @@ import uuid
 # 连接到Milvus数据库
 db_name = "kb"
 client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
-collection_name = "scene"  # 场景集合名
+collection_name = "scene_bm25"  # 场景集合名
 SIMILARITY_THRESHOLD = 0.4  # 相似度阈值
 
 def vector_query(client, collection_name, text, top_k=5):

@@ -18,9 +18,9 @@ from src.utils.llm import async_model_infer
 # 从环境变量或配置文件中获取配置
 MILVUS_URI = os.getenv("MILVUS_URI")
 DB_NAME = "kb"
-scene_collection_name = "scene"
+scene_collection_name = "scene_bm25"
 script_collection_name = "script4"
-character_collection_name = "character2"
+character_collection_name = "character_collection"
 
 scene_similarity_threshold=0.2
 script_similarity_threshold=0.2
@@ -40,15 +40,32 @@ async def get_client():
     return async_client
 
 
-async def search_scene(marking_text: Optional[str],query_text: Optional[str], top_k: int = 5):
+async def search_scene(marking_text: Optional[str],query_text: Optional[str], top_k: int = 6):
     client = await get_client()
     prompt = f"""
-    你帮我分析{marking_text}和{query_text}，分三种情况考虑：
-    1. 如果{marking_text}不为空，{query_text}为空，你帮我实现：如果{marking_text}字数较长，则提取{marking_text}的核心语义，去掉一些无关信息，返回凝练后的结果，如果{marking_text}字数很短，则直接返回{marking_text}。
-    2. 如果{marking_text}不为空，{query_text}不为空，你帮我实现：一起凝练{marking_text}和{query_text}，去掉一些无关信息，返回凝练后的结果。
-    3. 如果{marking_text}为空，{query_text}不为空，则将{query_text}凝练，去掉一些无关信息，返回凝练后的结果。
+你是一个搜索句生成专家，你的任务是根据以下两个变量生成一个简短的场景搜索句：
+## 背景
+- 划词文本是自于文章或者剧本中的一段文本划词，通常较长，如果没有请忽略
+- 场景命令是用户希望搜索的场景描述，可能是短句或一个或几个关键词，如果没有请忽略
+
+## 划词文本：
+{marking_text}
+
+## 场景命令：
+{query_text}
+
+要求：
+1. 生成格式为"在[场景]里，[角色]正在[动作描述]"
+2. 结合划词文本的内容特点和场景命令
+3. 语言简洁生动，突出场景氛围
+4. 长度控制在15-25字之间
+
+输出示例：1.两个人进入了一个洞穴，发现了一些东西。2.一个人在古玩店介绍古董时，有人求鉴物品。
+
+请生成搜索句，不需要任何解释：
     """
     result_text = await async_model_infer(prompt)
+    print('result_text', result_text)
     emb = await async_embedding_func([result_text])
     search_params = {"metric_type": "COSINE", "nprobe": 128}
     try:
@@ -78,14 +95,10 @@ async def search_scene(marking_text: Optional[str],query_text: Optional[str], to
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during Milvus search: {e}")
     
-async def search_script(query_text: Optional[str], top_k: int = 5):
+async def search_script(query_text: Optional[str], top_k: int = 6):
     client = await get_client()
-    prompt = f"""
-    你帮我分析{query_text}，分三种情况考虑：
-    1. 如果{query_text}不为空，你帮我实现：如果{query_text}字数较长，则提取{query_text}的核心语义，去掉一些无关信息，返回凝练后的结果，如果{query_text}字数很短，则直接返回{query_text}。
-    2. 如果{query_text}为空，则返回空。
-    """
-    result_text = await async_model_infer(prompt)
+    result_text = await async_model_infer(query_text)
+    print('result_text', result_text)
     emb = await async_embedding_func([result_text])
     search_params = {"metric_type": "COSINE", "nprobe": 128}
     try:
@@ -120,14 +133,10 @@ async def search_script(query_text: Optional[str], top_k: int = 5):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during Milvus search: {e}")
     
-async def search_character(query_text: Optional[str], top_k: int = 5):
+async def search_character(query_text: Optional[str], top_k: int = 6):
     client = await get_client()
-    prompt = f"""
-    你帮我分析{query_text}，分三种情况考虑：
-    1. 如果{query_text}不为空，你帮我实现：如果{query_text}字数较长，则提取{query_text}的核心语义，去掉一些无关信息，返回凝练后的结果，如果{query_text}字数很短，则直接返回{query_text}。
-    2. 如果{query_text}为空，则返回空。
-    """
-    result_text = await async_model_infer(prompt)
+    result_text = await async_model_infer(query_text)
+    print('result_text', result_text)
     emb = await async_embedding_func([result_text])
     search_params = {"metric_type": "COSINE", "nprobe": 128}
     try:
@@ -240,6 +249,7 @@ async def recommend_scene(request: SceneRequest):
     """
     try:
         results = await search_scene(marking_text=request.marking_text, query_text=request.query_text, top_k=request.top_k)
+        print(results)
         return {"results": results}
     except HTTPException as e:
         raise e
@@ -262,6 +272,7 @@ async def recommend_script(request: ScriptRequest):
     """
     try:
         results = await search_script(query_text=request.query_text, top_k=request.top_k)
+        print(results)
         return {"results": results}
     except HTTPException as e:
         raise e
@@ -284,6 +295,7 @@ async def recommend_character(request: CharacterRequest):
     """
     try:
         results = await search_character(query_text=request.query_text, top_k=request.top_k)
+        print(results)
         return {"results": results}
     except HTTPException as e:
         raise e
