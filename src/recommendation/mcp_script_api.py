@@ -20,8 +20,6 @@ import uuid
 import os
 
 
-
-
 # 连接到Milvus数据库（假设剧本集合名为script）
 db_name = "kb"
 client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
@@ -49,10 +47,11 @@ def script_recommendation(text):
     - 按情感基调推荐：如"温馨治愈"、"紧张刺激"、"感人催泪"等
 
     Args:
-        text: 用户对想要的剧本的描述，可以包含主题、风格、情节、情感等任何相关需求
+        text: 用户对想要的剧本的描述，可以包含主题、风格、情节、情感等任何相关需求，例如：1.讨论爱情与婚姻中信任与背叛的家庭剧。2.忠诚与背叛，卧底与警察的警匪动作片。3.关于人类与人工智能之间的伦理和道德冲突的科幻片。
     """
     
     results = semantic_search(client, collection_name, text, top_k=5)
+    print(results)
     formatted_results = []
     for result in results:
         # 排除id和similarity_score，其他字段用key加换行拼接
@@ -72,3 +71,4 @@ def script_recommendation(text):
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
     # print(script_character_recommendation("律师"))
+    # print(script_recommendation("爱情与背叛的故事"))
