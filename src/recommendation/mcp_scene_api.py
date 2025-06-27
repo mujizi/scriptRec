@@ -24,7 +24,7 @@ import os
 # 连接到Milvus数据库（假设场景集合名为scene）
 db_name = "kb"
 client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
-collection_name = "scene"  # 场景集合名
+collection_name = "scene_bm25"  # 场景集合名
 SIMILARITY_THRESHOLD = 0.3  # 相似度阈值
 
 from scene_recommendation_app import vector_query
@@ -64,9 +64,9 @@ def script_scene_recommendation(text):
         
         # 将单个角色的信息拼接
         formatted_results.append("\n".join(scene_info))
-    
+    return formatted_results
     # 用"——————"分割不同元素
-    return "\n——————\n".join(formatted_results)
+    # return "\n——————\n".join(formatted_results)
 
 
 if __name__ == "__main__":
