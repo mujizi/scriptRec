@@ -1,7 +1,7 @@
 import os
 import sys
 from dotenv import load_dotenv
-
+import json
 load_dotenv()
 
 # 从环境变量获取并设置 PYTHONPATH
@@ -12,11 +12,7 @@ if pythonpath and pythonpath not in sys.path:
 # print(os.getenv("MILVUS_URI"))
 # print(os.getenv("PYTHONPATH"))
 
-import gradio as gr
 from pymilvus import MilvusClient
-from src.utils.llm import embedding_func
-import numpy as np
-import uuid
 import os
 
 
@@ -51,20 +47,21 @@ def script_recommendation(text):
     """
     
     results = semantic_search(client, collection_name, text, top_k=5)
-    print(results)
-    formatted_results = []
-    for result in results:
-        # 排除id和similarity_score，其他字段用key加换行拼接
-        script_info = []
-        for key, value in result.items():
-            if key not in ["id", "similarity_score"]:
-                script_info.append(f"{key}:\n{value}")
+    # print(results)
+    return json.dumps(results, ensure_ascii=False)
+    # formatted_results = []
+    # for result in results:
+    #     # 排除id和similarity_score，其他字段用key加换行拼接
+    #     script_info = []
+    #     for key, value in result.items():
+    #         if key not in ["id", "similarity_score"]:
+    #             script_info.append(f"{key}:\n{value}")
         
-        # 将单个角色的信息拼接
-        formatted_results.append("\n".join(script_info))
+    #     # 将单个角色的信息拼接
+    #     formatted_results.append("\n".join(script_info))
     
-    # 用"——————"分割不同元素
-    return formatted_results
+    # # 用"——————"分割不同元素
+    # return formatted_results
     # return "\n——————\n".join(formatted_results)
 
 

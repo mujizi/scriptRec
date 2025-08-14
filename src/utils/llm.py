@@ -19,6 +19,7 @@ API_VERSION = os.getenv('API_VERSION')
 AZURE_EMBEDDING_DEPLOYMENT=os.getenv('AZURE_EMBEDDING_DEPLOYMENT')
 AZURE_EMBEDDING_MODEL_NAME=os.getenv('AZURE_EMBEDDING_MODEL_NAME')
 AZURE_MODEL_NAME=os.getenv('AZURE_MODEL_NAME')
+Embedding_API_VERSION=os.getenv('Embedding_API_VERSION')
 
 client = AzureOpenAI(
   azure_endpoint = AZURE_OPENAI_ENDPOINT, 
@@ -84,7 +85,7 @@ async def async_embedding_func(texts: list[str]) -> np.ndarray:
     try:
         client = AsyncAzureOpenAI(
             api_key=AZURE_OPENAI_API_KEY,
-            api_version=API_VERSION,
+            api_version=Embedding_API_VERSION,
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
         )
         embedding = await client.embeddings.create(model=AZURE_EMBEDDING_DEPLOYMENT, input=texts)

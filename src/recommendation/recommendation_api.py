@@ -8,10 +8,35 @@ import os
 from openai import AzureOpenAI, AsyncAzureOpenAI
 from dotenv import load_dotenv
 import json
+import logging
+from datetime import datetime
 # 添加项目根目录到 Python 路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 # 加载 .env 文件
 load_dotenv('/opt/rag_milvus_kb_project/.env')
+
+# 设置日志
+def setup_logger():
+    # 创建logs目录
+    log_dir = '/opt/rag_milvus_kb_project/logs'
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # 创建日志文件名（包含时间戳）
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_file = os.path.join(log_dir, f'recommendation_api_{timestamp}.log')
+    
+    # 配置日志
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()  # 同时输出到控制台
+        ]
+    )
+    return logging.getLogger(__name__)
+
+logger = setup_logger()
 
 # 从环境变量获取配置
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
@@ -203,9 +228,17 @@ async def search_scene(marking_text: Optional[str],query_text: Optional[str], to
     print("稠密向量结果:")
     for result in dense_results:
         print(f"  ID: {result['id']}, Rank: {result['rank']}, Scene: {result['scene_name']}")
+        print(f"    场景详情: {result['scene_specifics']}")
+        print(f"    场景总结: {result['scene_summary']}")
+        print(f"    所属剧本: {result['script_name']}")
+        print()
     print("BM25结果:")
     for result in bm25_results:
         print(f"  ID: {result['id']}, Rank: {result['rank']}, Scene: {result['scene_name']}")
+        print(f"    场景详情: {result['scene_specifics']}")
+        print(f"    场景总结: {result['scene_summary']}")
+        print(f"    所属剧本: {result['script_name']}")
+        print()
     
     # 在各自类型内按排名排序（排名越小越好，即位置越靠前越好）
     dense_results.sort(key=lambda x: x["rank"])
@@ -262,6 +295,11 @@ async def search_scene(marking_text: Optional[str],query_text: Optional[str], to
     print(f"请求top_k: {top_k}, 实际返回: {len(final_results)}")
     for i, result in enumerate(final_results):
         print(f"{i+1}. ID: {result['id']}, Rank: {result['rank']}, Type: {result['search_type']}, Scene: {result['scene_name']}")
+        print(f"    场景详情: {result['scene_specifics']}")
+        print(f"    场景总结: {result['scene_summary']}")
+        print(f"    所属剧本: {result['script_name']}")
+        print(f"    相似度分数: {result['similarity_score']:.4f}")
+        print()
     
     # 确保返回结果不超过top_k
     final_results = final_results[:top_k]
@@ -274,9 +312,9 @@ async def search_scene(marking_text: Optional[str],query_text: Optional[str], to
 
 async def search_script(query_text: Optional[str], top_k: int = 6):
     client = await get_client()
-    result_text = await async_model_infer(query_text)
-    print('result_text', result_text)
-    emb = await async_embedding_func([result_text])
+    # result_text = await async_model_infer(query_text)
+    # print('result_text', result_text)
+    emb = await async_embedding_func([query_text])
     search_params = {"metric_type": "COSINE", "nprobe": 128}
     try:
         search_res = await client.search(
@@ -312,9 +350,9 @@ async def search_script(query_text: Optional[str], top_k: int = 6):
     
 async def search_character(query_text: Optional[str], top_k: int = 6):
     client = await get_client()
-    result_text = await async_model_infer(query_text)
-    print('result_text', result_text)
-    emb = await async_embedding_func([result_text])
+    # result_text = await async_model_infer(query_text)
+    # print('result_text', result_text)
+    emb = await async_embedding_func([query_text])
     search_params = {"metric_type": "COSINE", "nprobe": 128}
     try:
         search_res = await client.search(
