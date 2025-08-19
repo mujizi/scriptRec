@@ -52,8 +52,8 @@ class SearchResult:
 
 # 连接到Milvus数据库（假设人物集合名为character_analysis）
 db_name = "kb"
-client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
-collection_name = "character"  # 人物集合名
+client = MilvusClient(uri="http://124.221.215.17:19530", db_name=db_name)
+collection_name = "character_collection"  # 人物集合名
 SIMILARITY_THRESHOLD = 0.4  # 相似度阈值
 
 # 尝试加载BM25模型

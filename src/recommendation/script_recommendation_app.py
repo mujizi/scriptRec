@@ -39,9 +39,9 @@ if not all([AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT]):
 # Milvus Client Setup
 # IMPORTANT: Ensure the URI is correct and Milvus is running.
 try:
-    client = MilvusClient(uri="http://10.1.15.222:19530", db_name="kb")
+    client = MilvusClient(uri="http://124.221.215.17:19530", db_name="kb")
     # Check server status
-    client.get_load_state(collection_name="script4")
+    client.get_load_state(collection_name="script_collection")
     print("Successfully connected to Milvus.")
 except Exception as e:
     print(f"Failed to connect to Milvus. Please check the URI and server status. Error: {e}")
@@ -49,7 +49,7 @@ except Exception as e:
     exit()
 
 # Collection Name
-COLLECTION_NAME = "script4"
+COLLECTION_NAME = "script_collection"
 
 # Similarity Threshold for Semantic Search
 # This is a distance threshold for COSINE metric. A value of 0.6 means we only keep results

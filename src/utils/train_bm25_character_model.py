@@ -31,7 +31,7 @@ def extract_character_texts_from_milvus():
     try:
         # 连接到Milvus
         db_name = "kb"
-        client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
+        client = MilvusClient(uri="http://117.36.50.198:40056", db_name=db_name)
         collection_name = "character"
         
         if not client.has_collection(collection_name):

@@ -18,8 +18,8 @@ import os
 
 # 连接到Milvus数据库（假设剧本集合名为script）
 db_name = "kb"
-client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
-collection_name = "script4"  # 人物集合名
+client = MilvusClient(uri="http://124.221.215.17:19530", db_name=db_name)
+collection_name = "script_collection"  # 人物集合名
 SIMILARITY_THRESHOLD = 0.4  # 相似度阈值
 
 from script_recommendation_app import semantic_search

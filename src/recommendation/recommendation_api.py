@@ -71,8 +71,8 @@ async def async_model_infer(text):
 # 从环境变量或配置文件中获取配置
 MILVUS_URI = os.getenv("MILVUS_URI")
 DB_NAME = "kb"
-scene_collection_name = "scene_bm25"
-script_collection_name = "script4"
+scene_collection_name = "scene_collection"
+script_collection_name = "script_collection"
 character_collection_name = "character_collection"
 
 scene_similarity_threshold=0.2

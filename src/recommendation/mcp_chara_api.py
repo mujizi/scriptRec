@@ -24,7 +24,7 @@ import os
 
 # 连接到Milvus数据库（假设人物集合名为character_analysis）
 db_name = "kb"
-client = MilvusClient(uri="http://10.1.15.222:19530", db_name=db_name)
+client = MilvusClient(uri="http://117.36.50.198:40056", db_name=db_name)
 collection_name = "character_collection"  # 人物集合名
 SIMILARITY_THRESHOLD = 0.4  # 相似度阈值
 

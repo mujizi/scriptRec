@@ -47,7 +47,7 @@ def connect_milvus(url, db_name, collection_name):
     return client
 
 
-url = "http://10.1.15.222:19530"
+url = "http://117.36.50.198:40056"
 db_name = "test_database"
 collection_name = "bq_1"
 client = connect_milvus(url, db_name, collection_name)

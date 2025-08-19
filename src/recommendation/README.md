@@ -95,7 +95,7 @@ pip install pymilvus gradio jieba python-dotenv
 
 ```bash
 # .env文件
-MILVUS_URI=http://10.1.15.222:19530
+MILVUS_URI=http://117.36.50.198:40056
 PYTHONPATH=/path/to/your/project
 AZURE_OPENAI_API_KEY=your_api_key
 AZURE_OPENAI_ENDPOINT=your_endpoint

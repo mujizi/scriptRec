@@ -288,7 +288,7 @@ if __name__ == "__main__":
     collection_name = "bq_1"
     pkl_path = "bq_bm25_save.pkl"
 
-    client = MilvusClient(uri="http://10.1.15.222:19530", db_name="test_database")
+    client = MilvusClient(uri="http://117.36.50.198:40056", db_name="test_database")
 
     chunks = read_and_process_files(books_dir)
     # for i in chunks:

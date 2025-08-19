@@ -172,7 +172,7 @@ if __name__ == "__main__":
     try:
         # 尝试连接默认数据库
         db_name = "kb"
-        client = MilvusClient(uri="http://10.1.15.222:19530",db_name=db_name)
+        client = MilvusClient(uri="http://117.36.50.198:40056",db_name=db_name)
 
         
         if db_name not in client.list_databases():
